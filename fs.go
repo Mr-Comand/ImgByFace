@@ -54,7 +54,7 @@ func (d *Dir) Attr(ctx context.Context, a *fuse.Attr) error {
 func (d *Dir) ReadDirAll(ctx context.Context) ([]fuse.Dirent, error) {
 	d.fs.mu.RLock()
 	defer d.fs.mu.RUnlock()
-
+	fmt.Println("Readdir", d.path)
 	entries := []fuse.Dirent{}
 	if d.path == "/" {
 		// At root level, list the people directories.
@@ -92,8 +92,10 @@ func (d *Dir) ReadDirAll(ctx context.Context) ([]fuse.Dirent, error) {
 					if !alreadyAdded {
 						addedDirs = append(addedDirs, subdirs[0])
 						entries = append(entries, fuse.Dirent{Name: subdirs[0], Type: fuse.DT_Dir})
+						fmt.Println("Readdir added folder ", subdirs[0])
 					}
 				} else {
+					fmt.Println("Readdir added file ", subdirs[0])
 					entries = append(entries, fuse.Dirent{Name: subdirs[0], Type: fuse.DT_File})
 				}
 				// entries = append(entries, fuse.Dirent{Name: filepath.Base(file), Type: fuse.DT_File})
@@ -110,12 +112,13 @@ func (d *Dir) ReadDirAll(ctx context.Context) ([]fuse.Dirent, error) {
 
 func (d *Dir) Lookup(ctx context.Context, name string) (fs.Node, error) {
 	full := filepath.Join(d.path, name)
-
+	fmt.Println("Lookup", full)
 	d.fs.mu.RLock()
 	defer d.fs.mu.RUnlock()
 
 	// Subdirectory
 	if d.path == "/" {
+		fmt.Println("Lookup home", full)
 		return &Dir{fs: d.fs, path: full}, nil
 	}
 
@@ -125,13 +128,17 @@ func (d *Dir) Lookup(ctx context.Context, name string) (fs.Node, error) {
 	//files := d.fs.peopleIndex[dirs[0]]
 	people := d.fs.photoIndex[inputDir+dirs[1]]
 	if people == nil {
+		fmt.Println("Lookup Dir", full)
+
 		return &Dir{fs: d.fs, path: full}, nil
 	}
 	for _, name := range people {
 		if dirs[0] == name {
+			fmt.Println("Lookup File", inputDir+dirs[1])
 			return &File{path: inputDir + dirs[1]}, nil
 		}
 	}
+	fmt.Println("Lookup err", name, full)
 	return nil, fuse.ENOENT
 }
 
