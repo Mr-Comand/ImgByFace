@@ -65,8 +65,9 @@ func (d *Dir) ReadDirAll(ctx context.Context) ([]fuse.Dirent, error) {
 		return entries, nil
 	} else {
 		dirs := strings.SplitN(strings.TrimPrefix(d.path, "/"), "/", 2)
+		fmt.Printf("Readdir dirs %s %s", d.path, dirs)
 		if files := d.fs.peopleIndex[dirs[0]]; files != nil {
-			fmt.Printf("Readdir dirs %s %s", d.path, dirs)
+			fmt.Printf("Readdir files %s %s", d.path, files)
 
 			addedDirs := make([]string, 0)
 			for _, file := range files {
