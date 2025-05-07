@@ -18,6 +18,8 @@ FROM debian:bookworm-slim
 # Install runtime dependencies: exiftool + FUSE
 RUN apt-get update && \
     apt-get install -y exiftool fuse3 && \
+    echo "user_allow_other" >> /etc/fuse.conf && \
+    chmod 644 /etc/fuse.conf && \
     rm -rf /var/lib/apt/lists/*
 
 # Create mount point dirs
