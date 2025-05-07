@@ -54,9 +54,10 @@ func (d *Dir) Attr(ctx context.Context, a *fuse.Attr) error {
 func (d *Dir) ReadDirAll(ctx context.Context) ([]fuse.Dirent, error) {
 	d.fs.mu.RLock()
 	defer d.fs.mu.RUnlock()
-	fmt.Println("Readdir", d.path)
+	fmt.Println("Readdir", d.path, inputDir)
 	entries := []fuse.Dirent{}
 	if d.path == "/" {
+		fmt.Println("Readdir home", d.path)
 		// At root level, list the people directories.
 		for person, _ := range d.fs.peopleIndex {
 			entries = append(entries, fuse.Dirent{Name: person, Type: fuse.DT_Dir})
@@ -65,27 +66,32 @@ func (d *Dir) ReadDirAll(ctx context.Context) ([]fuse.Dirent, error) {
 	} else {
 		dirs := strings.SplitN(strings.TrimPrefix(d.path, "/"), "/", 2)
 		if files := d.fs.peopleIndex[dirs[0]]; files != nil {
+			fmt.Printf("Readdir dirs %s %s", d.path, dirs)
 
 			addedDirs := make([]string, 0)
 			for _, file := range files {
 				var a string
 				if len(dirs) > 1 {
 					if !strings.HasPrefix(file, inputDir+dirs[1]+"/") {
+						fmt.Printf("Readdir wpx file %s %s", d.path, dirs)
 						continue
 					}
 					a = strings.TrimPrefix(file, inputDir+dirs[1]+"/")
 				} else {
 					if !strings.HasPrefix(file, inputDir) {
+						fmt.Printf("Readdir wpx %s %s", d.path, dirs)
 						continue
 					}
 					a = strings.TrimPrefix(file, inputDir)
 				}
+				fmt.Printf("Readdir dirs %s %s", d.path, a)
 				subdirs := strings.SplitN(a, "/", 3)
 				if len(subdirs) > 1 {
 					alreadyAdded := false
 					for _, dir := range addedDirs {
 						if strings.HasPrefix(subdirs[0], dir) {
 							alreadyAdded = true
+							fmt.Printf("Readdir alreadyAdded %s %s", d.path, addedDirs)
 							break
 						}
 					}
