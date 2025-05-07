@@ -24,7 +24,8 @@ func WatchInput(inputDir string, pfs *PeopleFS) {
 		case event := <-watcher.Events:
 			if event.Op&fsnotify.Write == fsnotify.Write ||
 				event.Op&fsnotify.Create == fsnotify.Create ||
-				event.Op&fsnotify.Remove == fsnotify.Remove {
+				event.Op&fsnotify.Remove == fsnotify.Remove ||
+				event.Op&fsnotify.Rename == fsnotify.Rename {
 				log.Println("Detected change:", event)
 				time.Sleep(500 * time.Millisecond) // debounce
 				pfs.Reindex(inputDir)

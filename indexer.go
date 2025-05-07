@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"os"
 	"path/filepath"
 
 	"github.com/barasher/go-exiftool"
@@ -14,9 +15,19 @@ type PeopleIndex map[string][]string // Change structure to map[personname]files
 // Extracts tags related to people from image files and returns a PhotoIndex with person names as keys and associated files as values.
 func extractPeopleTags(inputDir string) (PhotoIndex, PeopleIndex, error) {
 	log.Printf("Extracting XMP tags from: %s", inputDir)
-	files, err := filepath.Glob(filepath.Join(inputDir, "*.*"))
+
+	var files []string
+	err := filepath.WalkDir(inputDir, func(path string, d os.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if !d.IsDir() {
+			files = append(files, path)
+		}
+		return nil
+	})
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, fmt.Errorf("walking inputDir failed: %v", err)
 	}
 
 	// Initialize ExifTool
@@ -45,19 +56,17 @@ func extractPeopleTags(inputDir string) (PhotoIndex, PeopleIndex, error) {
 					}
 				case string:
 					peopleTags = append(peopleTags, v)
+					peopleIndex[v] = append(peopleIndex[v], fileMetadata.File)
 				}
 			}
 		}
 		if len(peopleTags) == 0 {
 			peopleIndex["no one"] = append(peopleIndex["no one"], fileMetadata.File)
+			photoIndex[fileMetadata.File] = []string{"no one"}
 			log.Printf("No people tags found in file: %s", fileMetadata.File)
 			continue
 		}
-		// If tags were found, add them to the PhotoIndex
-		for _, person := range peopleTags {
-			// Add file to the list of files for each person
-			peopleIndex[person] = append(peopleIndex[person], fileMetadata.File)
-		}
+
 		photoIndex[fileMetadata.File] = peopleTags
 	}
 

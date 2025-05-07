@@ -65,8 +65,38 @@ func (d *Dir) ReadDirAll(ctx context.Context) ([]fuse.Dirent, error) {
 	} else {
 		dirs := strings.SplitN(strings.TrimPrefix(d.path, "/"), "/", 2)
 		if files := d.fs.peopleIndex[dirs[0]]; files != nil {
+
+			addedDirs := make([]string, 0)
 			for _, file := range files {
-				entries = append(entries, fuse.Dirent{Name: filepath.Base(file), Type: fuse.DT_File})
+				var a string
+				if len(dirs) > 1 {
+					if !strings.HasPrefix(file, inputDir+dirs[1]+"/") {
+						continue
+					}
+					a = strings.TrimPrefix(file, inputDir+dirs[1]+"/")
+				} else {
+					if !strings.HasPrefix(file, inputDir) {
+						continue
+					}
+					a = strings.TrimPrefix(file, inputDir)
+				}
+				subdirs := strings.SplitN(a, "/", 3)
+				if len(subdirs) > 1 {
+					alreadyAdded := false
+					for _, dir := range addedDirs {
+						if strings.HasPrefix(subdirs[0], dir) {
+							alreadyAdded = true
+							break
+						}
+					}
+					if !alreadyAdded {
+						addedDirs = append(addedDirs, subdirs[0])
+						entries = append(entries, fuse.Dirent{Name: subdirs[0], Type: fuse.DT_Dir})
+					}
+				} else {
+					entries = append(entries, fuse.Dirent{Name: subdirs[0], Type: fuse.DT_File})
+				}
+				// entries = append(entries, fuse.Dirent{Name: filepath.Base(file), Type: fuse.DT_File})
 			}
 			return entries, nil
 		} else {
@@ -95,7 +125,7 @@ func (d *Dir) Lookup(ctx context.Context, name string) (fs.Node, error) {
 	//files := d.fs.peopleIndex[dirs[0]]
 	people := d.fs.photoIndex[inputDir+dirs[1]]
 	if people == nil {
-		return &File{path: inputDir + dirs[1]}, nil
+		return &Dir{fs: d.fs, path: full}, nil
 	}
 	for _, name := range people {
 		if dirs[0] == name {
@@ -104,6 +134,29 @@ func (d *Dir) Lookup(ctx context.Context, name string) (fs.Node, error) {
 	}
 	return nil, fuse.ENOENT
 }
+
+// func (d *Dir) Lookup(ctx context.Context, name string) (fs.Node, error) {
+// 	nextPath := filepath.Join(d.path, name)
+// 	d.fs.mu.RLock()
+// 	defer d.fs.mu.RUnlock()
+
+// 	// Try to find a file
+// 	virtual := strings.TrimPrefix(nextPath, "/")
+// 	for _, files := range d.fs.peopleIndex {
+// 		for _, file := range files {
+// 			rel, err := filepath.Rel(inputDir, file)
+// 			if err != nil {
+// 				continue
+// 			}
+// 			if rel == virtual {
+// 				return &File{path: file}, nil
+// 			}
+// 		}
+// 	}
+
+// 	// Otherwise assume it's a directory
+// 	return &Dir{fs: d.fs, path: nextPath}, nil
+// }
 
 type File struct {
 	path string
