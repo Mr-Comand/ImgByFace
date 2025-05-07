@@ -31,4 +31,4 @@ RUN chmod +x /usr/local/bin/peoplevfs
 
 # Enable FUSE
 VOLUME ["/input", "/mount"]
-ENTRYPOINT ["/usr/local/bin/peoplevfs", "input/", "mount/"]
+ENTRYPOINT ["/usr/local/bin/peoplevfs", "/input/", "/mount/"]
